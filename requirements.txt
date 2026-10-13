@@ -1,0 +1,31 @@
+# Core data processing
+pyspark==3.5.3
+delta-spark==3.2.1
+
+# Database
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.36
+
+# Data generation
+faker==26.1.0
+pandas==2.2.3
+
+# Validation & quality
+great-expectations==0.18.21
+
+# Airflow — install separately via Docker; listed here for reference
+# apache-airflow==2.9.3
+
+# Testing
+pytest==8.3.4
+pytest-mock==3.14.0
+pytest-cov==6.0.0
+
+# Code quality
+ruff==0.8.2
+black==24.10.0
+
+# Utilities
+python-dotenv==1.0.1
+tenacity==9.0.0
+pyarrow==18.0.0

@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+*.egg
+
+# Secrets & environment
+.env
+*.key
+*.pem
+*.secret
+
+# Data (generated)
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/quarantine/
+data/sample/*.csv
+
+# Spark & Delta
+derby.log
+metastore_db/
+spark-warehouse/
+*.crc
+._*
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+standalone_admin_password.txt
+webserver_config.py
+
+# Docker
+docker/postgres-data/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

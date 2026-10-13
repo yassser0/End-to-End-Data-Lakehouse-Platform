@@ -1,0 +1,141 @@
+# =============================================================================
+# Docker Compose — End-to-End Data Lakehouse Platform
+#
+# Services:
+#   postgres          — PostgreSQL 16 for source data and analytical results
+#   airflow-init      — One-shot Airflow DB init and user creation
+#   airflow-webserver — Airflow UI (http://localhost:8080)
+#   airflow-scheduler — Airflow scheduler
+#   spark-pipeline    — Runs the Spark/Delta pipeline (one-shot)
+#
+# Resource requirements (minimum):
+#   RAM  : 8 GB (4 GB for Airflow + 4 GB for Spark driver)
+#   CPU  : 4 cores
+#   Disk : 5 GB for Delta tables and PostgreSQL data
+#
+# Quick start:
+#   cp .env.example .env && <edit .env>
+#   docker compose up -d postgres
+#   docker compose run --rm airflow-init
+#   docker compose up -d airflow-webserver airflow-scheduler
+#   docker compose run --rm spark-pipeline
+#
+# Airflow UI: http://localhost:8080   (admin / admin by default)
+# PostgreSQL : localhost:5432         (lakehouse_user / see .env)
+# =============================================================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3-python3.11
+  env_file:
+    - .env
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+    PYTHONPATH: /opt/lakehouse
+    DATA_PATH: /opt/lakehouse/data/sample
+    DELTA_LAKE_PATH: /opt/lakehouse/data/delta
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    POSTGRES_DB: ${POSTGRES_DB}
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./src:/opt/lakehouse/src
+    - ./scripts:/opt/lakehouse/scripts
+    - ./data:/opt/lakehouse/data
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: lakehouse-postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "127.0.0.1:5432:5432"   # Bind to localhost only for security
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Airflow init (one-shot) ─────────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: lakehouse-airflow-init
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create
+          --username admin
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@lakehouse.local
+          --password admin
+      "
+    restart: "no"
+
+  # ── Airflow webserver ───────────────────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: lakehouse-airflow-webserver
+    command: webserver
+    ports:
+      - "127.0.0.1:8080:8080"   # Bind to localhost only
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Airflow scheduler ───────────────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: lakehouse-airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+
+  # ── Spark pipeline runner (one-shot) ────────────────────────────────────────
+  spark-pipeline:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.spark
+    container_name: lakehouse-spark
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      DELTA_LAKE_PATH: /opt/lakehouse/data/delta
+      DATA_PATH: /opt/lakehouse/data/sample
+    volumes:
+      - ./data:/opt/lakehouse/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - pipeline    # Only starts when --profile pipeline is specified
+
+volumes:
+  postgres-data:
+  airflow-logs:

@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# Spark + Delta Lake image for the e-commerce Data Lakehouse
+# Base: bitnami/spark 3.5 (includes Java 11 + Spark 3.5)
+# =============================================================================
+FROM bitnami/spark:3.5.3
+
+USER root
+
+# Install Python dependencies
+COPY requirements.txt /opt/lakehouse/requirements.txt
+RUN pip install --no-cache-dir -r /opt/lakehouse/requirements.txt
+
+# Copy source code
+COPY src/       /opt/lakehouse/src/
+COPY scripts/   /opt/lakehouse/scripts/
+COPY dags/      /opt/lakehouse/dags/
+COPY sql/       /opt/lakehouse/sql/
+COPY data/sample/ /opt/lakehouse/data/sample/
+
+# Set working directory
+WORKDIR /opt/lakehouse
+
+# Set Python path so `src` is importable
+ENV PYTHONPATH=/opt/lakehouse
+ENV DATA_PATH=/opt/lakehouse/data/sample
+ENV DELTA_LAKE_PATH=/opt/lakehouse/data/delta
+
+# Non-root user for running the pipeline
+RUN useradd -m -u 1001 sparkuser && \
+    chown -R sparkuser:sparkuser /opt/lakehouse
+USER sparkuser
+
+ENTRYPOINT ["python", "scripts/run_pipeline.py"]
