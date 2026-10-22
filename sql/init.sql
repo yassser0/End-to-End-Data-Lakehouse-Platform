@@ -87,7 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_dq_metrics_batch
 -- =============================================================================
 -- Airflow metadata database (separate from lakehouse)
 -- Airflow manages its own schema via alembic migrations.
--- Reference only — not executed here.
 -- =============================================================================
--- CREATE DATABASE airflow_db;
--- GRANT ALL PRIVILEGES ON DATABASE airflow_db TO lakehouse_user;
+SELECT 'CREATE DATABASE airflow_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'airflow_db')\gexec
+GRANT ALL PRIVILEGES ON DATABASE airflow_db TO lakehouse_user;
+
