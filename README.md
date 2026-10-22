@@ -32,6 +32,7 @@ A **production-grade, fully executable** e-commerce data engineering project dem
 - [Dataset Generation](#dataset-generation)
 - [Pipeline Execution](#pipeline-execution)
 - [Airflow UI](#airflow-ui)
+- [Streamlit Analytics Dashboard](#streamlit-analytics-dashboard)
 - [PostgreSQL Connection](#postgresql-connection)
 - [SQL Queries](#sql-queries)
 - [Running Tests](#running-tests)
@@ -379,6 +380,25 @@ Access: **http://localhost:8080** (after `docker compose up`)
 - Password: `admin`
 
 The DAG `ecommerce_data_pipeline` appears in the UI. Enable it to run on schedule, or trigger manually.
+
+---
+
+## Streamlit Analytics Dashboard
+
+An interactive dashboard for exploring the Lakehouse Gold analytical tables and data quality metrics:
+
+- **Business Overview**: Total revenue, paid order volume, AOV, active customer count, quality health score.
+- **Sales & Revenue**: Date range interactive slider, daily revenue trends, and AOV overlay.
+- **Product Insights**: Category revenue share, units sold vs revenue scatter, top 10 products leaderboard.
+- **Customer Analytics**: Revenue by segment (Bronze / Silver / Gold), top spending customers.
+- **Data Quality & Observability**: Medallion pipeline pass rate and ingested vs quarantined count breakdown.
+
+Access: **http://localhost:8501**
+
+```bash
+# Launch dashboard locally
+streamlit run src/dashboard/app.py
+```
 
 ---
 
