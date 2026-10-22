@@ -1,6 +1,6 @@
 # End-to-End Data Lakehouse Platform
 
-[![CI](https://github.com/YOUR_USERNAME/end-to-end-data-lakehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/end-to-end-data-lakehouse/actions)
+[![CI](https://github.com/yassser0/End-to-End-Data-Lakehouse-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/yassser0/End-to-End-Data-Lakehouse-Platform/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![Delta Lake 3.2](https://img.shields.io/badge/Delta%20Lake-3.2-green.svg)](https://delta.io/)
 [![Apache Spark 3.5](https://img.shields.io/badge/Apache%20Spark-3.5-orange.svg)](https://spark.apache.org/)
@@ -88,7 +88,7 @@ flowchart LR
 
     subgraph Serving
         PG[(PostgreSQL\nAnalytical Tables)]
-        BI[SQL / BI Tools]
+        BI[Streamlit Dashboard / BI]
     end
 
     subgraph Orchestration
@@ -118,6 +118,7 @@ flowchart LR
 | Language | Python | 3.11+ |
 | Containerisation | Docker / Docker Compose | 29+ / v2.40+ |
 | Testing | Pytest | 8.x |
+| Visualisation / BI | Streamlit / Plotly | 1.66+ / 7.x |
 | CI | GitHub Actions | - |
 | Data generation | Faker / stdlib | 26.x |
 
@@ -126,7 +127,7 @@ flowchart LR
 ## Repository Structure
 
 ```
-end-to-end-data-lakehouse/
+End-to-End-Data-Lakehouse-Platform/
 ├── dags/
 │   └── ecommerce_pipeline.py      # Airflow DAG (7 tasks)
 ├── src/
@@ -142,6 +143,8 @@ end-to-end-data-lakehouse/
 │   │   └── metrics.py             # Execution metrics accumulator
 │   ├── publishing/
 │   │   └── postgres_loader.py     # Parameterized bulk insert to Postgres
+│   ├── dashboard/
+│   │   └── app.py                 # Interactive Streamlit analytics dashboard
 │   └── utils/
 │       ├── config.py              # All config from env vars (no hardcoding)
 │       ├── logging_config.py      # Structured logging with secret redaction
@@ -252,8 +255,8 @@ end-to-end-data-lakehouse/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/end-to-end-data-lakehouse.git
-cd end-to-end-data-lakehouse
+git clone https://github.com/yassser0/End-to-End-Data-Lakehouse-Platform.git
+cd End-to-End-Data-Lakehouse-Platform
 
 # Create and activate virtual environment
 python -m venv .venv
@@ -518,6 +521,7 @@ spark.read.format("delta").load("data/delta/quarantine/orders").show()
 | Gold analytical tables (5) | ✅ Implemented | |
 | PostgreSQL publishing | ✅ Implemented | Full refresh |
 | Airflow DAG | ✅ Implemented | 7 tasks, XCom passing |
+| Streamlit BI Dashboard | ✅ Implemented | Real-time KPIs & charts |
 | Unit tests (66 tests) | ✅ Implemented | No Spark needed |
 | Docker Compose | ✅ Implemented | Local dev |
 | GitHub Actions CI | ✅ Implemented | Unit tests + lint |
