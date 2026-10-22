@@ -155,7 +155,8 @@ def build_order_status_summary(spark: SparkSession) -> int:
     df = _load_silver_orders(spark)
 
     result = (
-        df.groupBy("order_status")
+        df.filter(F.col("order_status").isNotNull())
+        .groupBy("order_status")
         .agg(
             F.count("order_id").alias("order_count"),
             F.sum("revenue").alias("total_amount"),
