@@ -546,12 +546,3 @@ spark.read.format("delta").load("data/delta/quarantine/orders").show()
 6. **Kubernetes**: Deploy on K8s with Helm charts
 7. **Observability**: Integrate OpenTelemetry traces into Spark jobs
 
----
-
-## License
-
-MIT — see [LICENSE](LICENSE)
-
----
-
-*Built as a professional data engineering portfolio project.*
