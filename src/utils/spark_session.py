@@ -13,7 +13,7 @@ from pathlib import Path
 
 from pyspark.sql import SparkSession
 
-from src.utils.config import SPARK_MASTER, SPARK_APP_NAME
+from src.utils.config import SPARK_APP_NAME, SPARK_MASTER
 from src.utils.logging_config import get_logger
 
 

@@ -20,7 +20,6 @@ from src.quality.validation import (
     validate_order_record,
 )
 
-
 # ─── check_required_columns ───────────────────────────────────────────────────
 
 

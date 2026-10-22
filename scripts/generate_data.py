@@ -20,7 +20,6 @@ Usage:
 
 import argparse
 import csv
-import os
 import random
 import string
 from datetime import date, datetime, timedelta, timezone

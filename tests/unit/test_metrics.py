@@ -8,8 +8,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from src.quality.metrics import PipelineMetrics
 
 

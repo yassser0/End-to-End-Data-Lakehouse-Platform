@@ -6,6 +6,7 @@ Passwords and secrets are never logged.
 import logging
 import sys
 from datetime import datetime, timezone
+
 from src.utils.config import LOG_LEVEL
 
 
