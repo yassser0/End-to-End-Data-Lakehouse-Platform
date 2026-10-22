@@ -80,17 +80,7 @@ services:
   airflow-init:
     <<: *airflow-common
     container_name: lakehouse-airflow-init
-    command: >
-      bash -c "
-        airflow db migrate &&
-        airflow users create
-          --username admin
-          --firstname Admin
-          --lastname User
-          --role Admin
-          --email admin@lakehouse.local
-          --password admin
-      "
+    command: bash -c "airflow db migrate && airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@lakehouse.local --password admin"
     restart: "no"
 
   # ── Airflow webserver ───────────────────────────────────────────────────────
