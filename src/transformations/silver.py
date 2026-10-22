@@ -211,17 +211,20 @@ def transform_silver_orders(
     df = _add_rejection(
         df,
         F.when(
-            ~F.col("order_status").isin(*list(_VALID_ORDER_STATUS)),
+            F.col("order_status").isNull()
+            | ~F.col("order_status").isin(*list(_VALID_ORDER_STATUS)),
             F.lit("INVALID_ORDER_STATUS"),
         ).otherwise(None),
     )
     df = _add_rejection(
         df,
         F.when(
-            ~F.col("payment_status").isin(*list(_VALID_PAYMENT_STATUS)),
+            F.col("payment_status").isNull()
+            | ~F.col("payment_status").isin(*list(_VALID_PAYMENT_STATUS)),
             F.lit("INVALID_PAYMENT_STATUS"),
         ).otherwise(None),
     )
+
 
     # 8. Referential integrity — use LEFT ANTI JOIN (no Python UDFs needed)
     # UDFs spawn python3 worker processes which fail on Windows; pure SQL joins
