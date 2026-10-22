@@ -108,10 +108,12 @@ def _write_silver(spark: SparkSession, df: DataFrame, path: str, key: str) -> in
 
 def _write_quarantine(df: DataFrame, entity: str) -> int:
     path = f"{QUARANTINE_PATH}/{entity}"
-    if df.rdd.isEmpty():
+    # Use count() instead of rdd.isEmpty() — rdd operations spawn a Python worker
+    # process that crashes under Python 3.13 (PySpark 3.5.x limitation on Windows).
+    cnt = df.count()
+    if cnt == 0:
         return 0
     df.write.format("delta").mode("append").option("mergeSchema", "true").save(path)
-    cnt = df.count()
     logger.info("Quarantine write entity=%s rows=%d", entity, cnt)
     return cnt
 
@@ -165,19 +167,6 @@ def transform_silver_orders(
     )
 
     # 4. Null checks on required fields
-    for col in ("order_id", "customer_id", "product_id"):
-        df = df.withColumn(
-            "_rejection_reason",
-            F.when(
-                F.col(col).isNull() & F.col("_rejection_reason").isNull()
-                if "_rejection_reason" in df.columns
-                else F.col(col).isNull(),
-                F.lit(f"NULL_{col.upper()}"),
-            ).otherwise(
-                F.col("_rejection_reason") if "_rejection_reason" in df.columns else F.lit(None)
-            ),
-        )
-
     df = _add_rejection(
         df,
         F.when(F.col("order_id").isNull(), F.lit("NULL_ORDER_ID")).otherwise(None),
@@ -219,7 +208,6 @@ def transform_silver_orders(
     )
 
     # 7. Status validation
-    valid_status_set = F.array(*[F.lit(s) for s in _VALID_ORDER_STATUS])
     df = _add_rejection(
         df,
         F.when(
@@ -235,34 +223,47 @@ def transform_silver_orders(
         ).otherwise(None),
     )
 
-    # 8. Referential integrity
+    # 8. Referential integrity — use LEFT ANTI JOIN (no Python UDFs needed)
+    # UDFs spawn python3 worker processes which fail on Windows; pure SQL joins
+    # are more efficient and avoid the 'Cannot run program python3' error.
     if valid_customer_ids:
-        cust_bc = spark.sparkContext.broadcast(valid_customer_ids)
-        cust_check_udf = F.udf(
-            lambda cid: None if cid in cust_bc.value else "INVALID_CUSTOMER_REF",
-            T.StringType(),
+        cust_df = spark.createDataFrame(
+            [(cid,) for cid in valid_customer_ids], ["_valid_cid"]
         )
-        df = _add_rejection(
-            df,
-            F.when(
-                F.col("customer_id").isNotNull(),
-                cust_check_udf(F.col("customer_id")),
-            ).otherwise(None),
+        # Find rows with a non-null customer_id that is NOT in the valid set
+        bad_cust = (
+            df.filter(F.col("customer_id").isNotNull())
+            .join(cust_df, df["customer_id"] == cust_df["_valid_cid"], "left_anti")
+            .select("order_id")
         )
+        bad_cust_ids = {row["order_id"] for row in bad_cust.collect()}
+        if bad_cust_ids:
+            df = _add_rejection(
+                df,
+                F.when(
+                    F.col("order_id").isin(*list(bad_cust_ids)),
+                    F.lit("INVALID_CUSTOMER_REF"),
+                ).otherwise(None),
+            )
 
     if valid_product_ids:
-        prod_bc = spark.sparkContext.broadcast(valid_product_ids)
-        prod_check_udf = F.udf(
-            lambda pid: None if pid in prod_bc.value else "INVALID_PRODUCT_REF",
-            T.StringType(),
+        prod_df = spark.createDataFrame(
+            [(pid,) for pid in valid_product_ids], ["_valid_pid"]
         )
-        df = _add_rejection(
-            df,
-            F.when(
-                F.col("product_id").isNotNull(),
-                prod_check_udf(F.col("product_id")),
-            ).otherwise(None),
+        bad_prod = (
+            df.filter(F.col("product_id").isNotNull())
+            .join(prod_df, df["product_id"] == prod_df["_valid_pid"], "left_anti")
+            .select("order_id")
         )
+        bad_prod_ids = {row["order_id"] for row in bad_prod.collect()}
+        if bad_prod_ids:
+            df = _add_rejection(
+                df,
+                F.when(
+                    F.col("order_id").isin(*list(bad_prod_ids)),
+                    F.lit("INVALID_PRODUCT_REF"),
+                ).otherwise(None),
+            )
 
     valid_df, rejected_df = _split_valid_invalid(df)
     valid_count = _write_silver(spark, valid_df, silver_path, "order_id")

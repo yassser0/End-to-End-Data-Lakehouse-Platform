@@ -27,11 +27,10 @@ Gold tables
 4. order_status_summary  — counts and amounts by order status
 5. data_quality_metrics  — ingestion / quality statistics per batch run
 """
-from delta import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-from src.utils.config import GOLD_PATH, QUARANTINE_PATH, SILVER_PATH
+from src.utils.config import GOLD_PATH, SILVER_PATH
 from src.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -40,10 +39,12 @@ logger = get_logger(__name__)
 def _write_gold(spark: SparkSession, df: DataFrame, table_name: str) -> int:
     """Overwrite a Gold Delta table (analytical tables are fully replaced each run)."""
     path = f"{GOLD_PATH}/{table_name}"
+    df = df.cache()
+    cnt = df.count()
     df.write.format("delta").mode("overwrite").option(
         "overwriteSchema", "true"
     ).save(path)
-    cnt = df.count()
+    df.unpersist()
     logger.info("Gold table=%s rows=%d", table_name, cnt)
     return cnt
 

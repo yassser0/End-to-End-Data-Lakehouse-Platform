@@ -18,7 +18,6 @@ No validation or cleansing happens here.
 """
 from delta import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql import functions as F
 
 from src.utils.config import BRONZE_PATH
 from src.utils.logging_config import get_logger

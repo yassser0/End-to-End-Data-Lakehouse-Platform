@@ -18,7 +18,6 @@ Re-running is idempotent — no duplicate analytical records accumulate.
 from __future__ import annotations
 
 import contextlib
-import os
 from typing import Generator
 
 import psycopg2

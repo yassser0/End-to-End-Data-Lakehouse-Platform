@@ -4,9 +4,9 @@ All settings are read from environment variables (loaded from .env via python-do
 No secrets are hardcoded. Pipeline fails loudly if critical vars are missing.
 """
 import os
-import secrets
-import logging
+import warnings
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load .env when running locally; in Docker the vars are injected directly.
@@ -39,6 +39,11 @@ POSTGRES_USER: str = _optional("POSTGRES_USER", "lakehouse_user")
 # TODO(security): For production, use a secret manager (e.g., AWS Secrets Manager,
 # HashiCorp Vault) instead of environment variables.
 POSTGRES_PASSWORD: str = _optional("POSTGRES_PASSWORD", "")
+if not POSTGRES_PASSWORD:
+    warnings.warn(
+        "POSTGRES_PASSWORD is not set. The pipeline will fail to connect to PostgreSQL. "
+        "Set it in your .env file."
+    )
 
 # ── Spark ─────────────────────────────────────────────────────────────────────
 SPARK_MASTER: str = _optional("SPARK_MASTER", "local[*]")

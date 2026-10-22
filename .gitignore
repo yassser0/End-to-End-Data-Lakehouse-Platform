@@ -4,7 +4,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.venv/
+.venv*/
 venv/
 env/
 *.egg
@@ -21,6 +21,8 @@ data/bronze/
 data/silver/
 data/gold/
 data/quarantine/
+data/delta/
+data/metrics/
 data/sample/*.csv
 
 # Spark & Delta
